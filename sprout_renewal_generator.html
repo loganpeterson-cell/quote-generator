@@ -1,0 +1,552 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#2c3838}
+.tab-btn{flex:1;padding:12px 8px;background:none;border:none;border-bottom:2.5px solid transparent;font-family:inherit;font-size:12.5px;cursor:pointer;transition:all .15s}
+.tab-btn.active{color:#0ca750;border-bottom-color:#0ca750;font-weight:600}
+.tab-btn:not(.active){color:#8a9a9a}
+.inp{width:100%;padding:7px 10px;border:1px solid #dde8e2;border-radius:7px;font-size:13px;color:#354141;font-family:inherit;outline:none;background:#fff}
+.inp:focus{border-color:#0ca750}
+.sel{width:100%;padding:7px 10px;border:1px solid #dde8e2;border-radius:7px;font-size:13px;color:#354141;font-family:inherit;outline:none;background:#fff;cursor:pointer}
+.ta{width:100%;padding:10px 12px;border:1px solid #dde8e2;border-radius:8px;font-size:12px;color:#354141;font-family:inherit;outline:none;resize:vertical;line-height:1.6;background:#fff}
+.ta:focus{border-color:#0ca750}
+.pill-plan{padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;border:1.5px solid #dde8e2;background:#fff;color:#8a9a9a}
+.pill-plan.sel{background:#e8f5ec;border-color:#0ca750;color:#0ca750;font-weight:600}
+.gen-btn{background:#0ca750;color:#fff;border:none;border-radius:9px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.2px;transition:background .15s}
+.gen-btn:hover{background:#0a9445}
+.gen-btn:disabled{background:#aaa;cursor:not-allowed}
+.back-btn{background:transparent;border:1px solid #4e6060;color:#b0c0b8;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+.back-btn:hover{background:#3a4a4a}
+.print-btn{background:#0ca750;border:none;color:#fff;border-radius:7px;padding:6px 16px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+[contenteditable]:hover{background:rgba(12,167,80,.06);border-radius:4px;outline:1px dashed rgba(12,167,80,.3)}
+[contenteditable]:focus{background:rgba(12,167,80,.08);border-radius:4px;outline:1px solid rgba(12,167,80,.4)}
+@media print{
+  .no-print{display:none!important}
+  #doc-outer{background:#fff!important;padding:0!important;margin:0!important}
+  #doc-paper{box-shadow:none!important;border-radius:0!important;margin:0!important;max-width:100%!important}
+}
+@keyframes grow{0%,100%{width:15%;opacity:.5}50%{width:85%;opacity:1}}
+</style>
+
+<div id="app"></div>
+
+<script>
+const C={j:'#0ca750',jd:'#0a9445',jl:'#e8f5ec',ch:'#354141',cl:'#5a7070',cd:'#8a9a9a',bg:'#f5f7f6',bd:'#dde8e2',mn:'#0a2960',br:'#63DD6F'};
+
+const PLANS=['Standard','Professional','Advanced','Enterprise'];
+const PLAN_FEATS={
+  Standard:['Publishing & Scheduling','Smart Inbox','Basic Reporting','Team Collaboration','Profile Management (5 profiles)'],
+  Professional:['Publishing & Scheduling','Smart Inbox','Competitive Reports','Custom Reporting','Approval Workflows','CRM Integrations','Team Collaboration','Profile Management (10 profiles)'],
+  Advanced:['Publishing & Scheduling','Smart Inbox','Advanced Analytics','Message Spike Alerts','Digital Asset Library','Chatbot Builder','Approval Workflows','CRM & Helpdesk Integrations','Saved Reports','Profile Management (20 profiles)'],
+  Enterprise:['Publishing & Scheduling','Smart Inbox','Premium Analytics','Social Listening','AI Assist','Digital Asset Library','API Access','CRM & Helpdesk Integrations','Team Collaboration','Unlimited Profiles']
+};
+const FEAT_DESC={
+  'Publishing & Scheduling':'Plan, create, and schedule content across all connected networks from a unified content calendar with drafts, approval flows, and cross-team visibility.',
+  'Smart Inbox':'Every message, comment, and mention from all profiles lands in one prioritized inbox with AI triage, routing rules, and response templates.',
+  'Advanced Analytics':'Build custom dashboards tracking cross-channel performance, audience growth, and content ROI — with competitive benchmarking and exec-ready exports.',
+  'Basic Reporting':'Out-of-the-box reports covering engagement, reach, and follower metrics across all connected social profiles.',
+  'Competitive Reports':'Benchmark your brand against competitors on engagement, share of voice, and content performance across major networks.',
+  'Custom Reporting':'Build fully custom reports aligned to your KPIs, with scheduled delivery to stakeholders — no manual work required.',
+  'Approval Workflows':'Route content through multi-step, role-based approval flows before publishing — keeping compliance, legal, and leadership aligned.',
+  'Digital Asset Library':'A centralized, searchable library for storing and sharing brand-approved images, videos, and copy across the entire team.',
+  'Chatbot Builder':'Automate DM and comment responses with no-code conversation flows for FAQs, lead capture, and intelligent routing.',
+  'CRM Integrations':'Sync Sprout conversations with Salesforce and HubSpot so sales and support teams have the full social context of every customer.',
+  'CRM & Helpdesk Integrations':'Connect Salesforce, HubSpot, Zendesk, and Jira to tie social conversations directly to customer records and support tickets.',
+  'Social Listening':'Track brand mentions, competitors, and industry trends across the social web with real-time alerts and sentiment analysis.',
+  'AI Assist':"Generate captions, suggest responses, find optimal posting times, and surface content recommendations using Sprout's built-in AI.",
+  'API Access':'Integrate Sprout into your existing tech stack with API access to automate workflows, pull data, and build custom tooling.',
+  'Premium Analytics':'Executive-level social intelligence with predictive insights, custom metric modeling, and multi-channel ROI attribution.',
+  'Saved Reports':'Create and auto-deliver custom reports to stakeholders on a recurring schedule — without anyone pulling them manually.',
+  'Team Collaboration':'Assign tasks, balance workloads, set role-based permissions, and coordinate across departments — all within Sprout.',
+  'Message Spike Alerts':'Instant alerts when inbound message volume spikes so your team can respond before an issue escalates.',
+  'Unlimited Profiles':'Connect and manage unlimited social profiles across all supported networks under a single unified platform.',
+  'Profile Management (5 profiles)':'Connect and manage up to 5 social profiles across Instagram, Facebook, X, LinkedIn, and other supported networks.',
+  'Profile Management (10 profiles)':'Connect and manage up to 10 social profiles with full publishing, inbox, and analytics for each.',
+  'Profile Management (20 profiles)':'Connect and manage up to 20 social profiles across all supported networks with full platform functionality.'
+};
+
+// ─── STATE ───────────────────────────────────────
+let state={
+  step:'input', tab:'client', error:'',
+  cl:{company:'',contact:'',title:'',email:'',industry:'',teamSize:'',plan:'Advanced',am:'',amEmail:'',quoteNum:'Q-2025-'+(Math.floor(Math.random()*9000)+1000),term:'12',discount:'10',startDate:'',endDate:'',billing:'Annual (upfront)',payment:'ACH / Bank Transfer'},
+  items:[
+    {id:1,name:'Advanced Plan',type:'base',qty:5,price:399},
+    {id:2,name:'Premium Analytics Add-On',type:'addon',qty:1,price:249},
+    {id:3,name:'Social Listening (3 Topics)',type:'addon',qty:1,price:399}
+  ],
+  feats:[...PLAN_FEATS['Advanced']],
+  ctx:{gong:'',transcript:'',gainsight:'',other:''},
+  pdfFile:null,
+  gen:null
+};
+
+function setC(k,v){state.cl={...state.cl,[k]:v};render()}
+function setCtx(k,v){state.ctx={...state.ctx,[k]:v};render()}
+
+function calcTotals(){
+  const term=parseInt(state.cl.term)||12;
+  const sub=state.items.reduce((s,i)=>s+i.qty*i.price*term,0);
+  const disc=Math.round(sub*(parseFloat(state.cl.discount)||0)/100);
+  return{term,sub,disc,total:sub-disc};
+}
+
+// ─── HELPERS ─────────────────────────────────────
+function logoSVG(size=28){
+  return `<div style="display:flex;align-items:center;gap:9px">
+    <div style="width:${size}px;height:${size}px;background:#0ca750;border-radius:${Math.round(size*.25)}px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="${Math.round(size*.65)}" height="${Math.round(size*.65)}" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3C7.5 3 4 6.5 4 11c0 2.8 1.4 5.3 3.5 6.8V20h9v-2.2C18.6 16.3 20 13.8 20 11c0-4.5-3.5-8-8-8z" fill="#fff" opacity=".85"/>
+        <ellipse cx="12" cy="11.5" rx="3.2" ry="3.8" fill="#0ca750"/>
+        <rect x="10.5" y="2" width="3" height="2.5" rx="1" fill="#63DD6F"/>
+      </svg>
+    </div>
+    <div>
+      <div style="color:#fff;font-size:${Math.round(size*.55)}px;font-weight:600;letter-spacing:-.3px;line-height:1.2">Sprout Social</div>
+    </div>
+  </div>`;
+}
+
+function lbl(text){return`<div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8a9a9a;margin-bottom:4px">${text}</div>`}
+
+function row2(a,b){return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">${a}${b}</div>`}
+
+function fldGroup(label,html){return`<div style="margin-bottom:14px">${lbl(label)}${html}</div>`}
+
+function sectionTitle(icon,text){
+  return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #e8f5ec">
+    <span style="color:#0ca750;font-size:13px">${icon}</span>
+    <span style="font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#0ca750">${text}</span>
+  </div>`;
+}
+
+// ─── FILE UPLOAD ──────────────────────────────────
+async function handleFile(e,field){
+  const file=e.target.files?.[0];if(!file)return;
+  if(file.name.toLowerCase().endsWith('.pdf')){
+    const reader=new FileReader();
+    reader.onload=ev=>{state.pdfFile={name:file.name,data:ev.target.result.split(',')[1],field};render()};
+    reader.readAsDataURL(file);
+  }else{
+    const text=await file.text();
+    setCtx(field,text);
+  }
+}
+
+// ─── GENERATE ─────────────────────────────────────
+async function generate(){
+  state.step='generating';state.error='';render();
+  const {term,sub,disc,total}=calcTotals();
+  const cl=state.cl;
+  const liText=state.items.map(i=>`• ${i.name}: ${i.qty} × $${i.price}/mo`).join('\n');
+  const featList=state.feats.join(', ');
+  const anyCtx=state.ctx.gong||state.ctx.transcript||state.ctx.gainsight||state.ctx.other||state.pdfFile;
+
+  const prompt=`You are a senior Sprout Social account strategist creating a tailored post-call renewal document for an account manager to send to a client's leadership team (primary contact → manager → CMO chain).
+
+CLIENT:
+Company: ${cl.company||'[Client]'}
+Industry: ${cl.industry||'not provided'}
+Social team size: ${cl.teamSize?cl.teamSize+' people':'not provided'}
+Plan: Sprout Social ${cl.plan}
+Contract value: $${total.toLocaleString()} / ${term===1?'month':term===12?'year':'2 years'}
+
+LINE ITEMS:
+${liText}
+
+FEATURES INCLUDED:
+${featList}
+
+${state.ctx.gong?'GONG CALL NOTES:\n'+state.ctx.gong+'\n\n':''}${state.pdfFile?'[TRANSCRIPT PDF ATTACHED — see document]\n\n':(state.ctx.transcript?'CALL TRANSCRIPT:\n'+state.ctx.transcript.slice(0,4000)+'\n\n':'')}${state.ctx.gainsight?'GAINSIGHT / ACCOUNT DATA:\n'+state.ctx.gainsight+'\n\n':''}${state.ctx.other?'OTHER CONTEXT:\n'+state.ctx.other+'\n\n':''}${!anyCtx?'NOTE: No call context provided. Generate specific, plausible usage examples based on the industry and plan tier. Make it feel real and tailored — not generic marketing copy.\n\n':''}
+
+Return ONLY valid JSON (no markdown fences, no explanation):
+{
+  "executiveSummary": "2-3 sentences at CMO level — strategic outcomes and competitive advantage, not feature names",
+  "usageHighlights": [
+    {"feature": "exact feature name from included list", "teamUsage": "1-2 sentences: HOW this team specifically uses it — concrete actions, workflows, or team behaviors", "impact": "specific business impact or outcome"}
+  ],
+  "businessCase": {
+    "headline": "renewal value headline — max 10 words, compelling and specific",
+    "narrative": "3-4 sentences making the renewal case — cite specific usage patterns, results, and the risk/cost of switching or not renewing",
+    "keyWins": ["specific achievement, metric, or business result", "another concrete win", "a third win or outcome"]
+  },
+  "recommendations": [
+    {"feature": "a specific Sprout feature or add-on NOT in their current plan", "reason": "why it's a fit for their specific situation from the call", "benefit": "expected business outcome in concrete terms"}
+  ],
+  "renewalTalkingPoints": ["actionable talking point for the renewal conversation", "another point", "another point"]
+}
+
+Create a usageHighlight for EVERY feature in their plan. Be highly specific to ${cl.company||'this account'}. Reference their industry, team size, and anything from the context. Never write generic marketing copy.`;
+
+  try{
+    const msgContent=[];
+    if(state.pdfFile){msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:state.pdfFile.data}})}
+    msgContent.push({type:'text',text:prompt});
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:msgContent}]})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    const raw=data.content.map(b=>b.text||'').join('');
+    const match=raw.match(/\{[\s\S]*\}/);
+    if(!match)throw new Error('No JSON in response');
+    state.gen=JSON.parse(match[0]);
+    state.step='doc';
+  }catch(e){
+    state.error='Generation failed: '+e.message;
+    state.step='input';
+  }
+  render();
+}
+
+// ─── RENDER INPUT ─────────────────────────────────
+function renderInput(){
+  const {term,sub,disc,total}=calcTotals();
+  const cl=state.cl;
+  const tab=state.tab;
+
+  const TABS=[{id:'client',label:'① Client & Plan'},{id:'contract',label:'② Contract'},{id:'context',label:'③ Call Context'}];
+
+  let tabContent='';
+
+  if(tab==='client'){
+    tabContent=`
+      <div style="font-size:12px;color:#8a9a9a;margin-bottom:18px;line-height:1.6">Client info used in the document header and AI generation context.</div>
+      ${row2(
+        fldGroup('Company Name *',`<input class="inp" value="${cl.company}" placeholder="Acme Corporation" oninput="setC('company',this.value)">`),
+        fldGroup('Industry',`<input class="inp" value="${cl.industry}" placeholder="e.g. E-commerce, SaaS, Healthcare" oninput="setC('industry',this.value)">`)
+      )}
+      ${row2(
+        fldGroup('Primary Contact',`<input class="inp" value="${cl.contact}" placeholder="Jordan Lee" oninput="setC('contact',this.value)">`),
+        fldGroup('Title',`<input class="inp" value="${cl.title}" placeholder="VP of Marketing" oninput="setC('title',this.value)">`)
+      )}
+      ${row2(
+        fldGroup('Email',`<input class="inp" value="${cl.email}" placeholder="jordan@company.com" oninput="setC('email',this.value)">`),
+        fldGroup('Social Team Size',`<input class="inp" value="${cl.teamSize}" placeholder="e.g. 8 people" oninput="setC('teamSize',this.value)">`)
+      )}
+      <div style="border-top:1px solid ${C.bd};margin:18px 0"></div>
+      <div style="margin-bottom:14px">
+        ${lbl('Sprout Social Plan')}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          ${PLANS.map(p=>`<button class="pill-plan${cl.plan===p?' sel':''}" onclick="changePlan('${p}')">${p}</button>`).join('')}
+        </div>
+      </div>
+      ${row2(
+        fldGroup('Contract Term',`<select class="sel" onchange="setC('term',this.value)"><option value="1"${cl.term==='1'?' selected':''}>Month-to-month</option><option value="12"${cl.term==='12'?' selected':''}>Annual (12 mo)</option><option value="24"${cl.term==='24'?' selected':''}>2-Year (24 mo)</option></select>`),
+        fldGroup('Discount %',`<input class="inp" type="number" value="${cl.discount}" placeholder="0" min="0" max="100" oninput="setC('discount',this.value)">`)
+      )}
+      <div style="border-top:1px solid ${C.bd};margin:18px 0"></div>
+      ${row2(
+        fldGroup('Account Manager',`<input class="inp" value="${cl.am}" placeholder="Sam Rivera" oninput="setC('am',this.value)">`),
+        fldGroup('AM Email',`<input class="inp" value="${cl.amEmail}" placeholder="srivera@sproutsocial.com" oninput="setC('amEmail',this.value)">`)
+      )}
+      ${row2(
+        fldGroup('Contract Start',`<input class="inp" type="date" value="${cl.startDate}" oninput="setC('startDate',this.value)">`),
+        fldGroup('Contract End',`<input class="inp" type="date" value="${cl.endDate}" oninput="setC('endDate',this.value)">`)
+      )}`;
+  }
+
+  if(tab==='contract'){
+    const itemRows=state.items.map((item,idx)=>`
+      <tr style="border-bottom:1px solid ${C.bd}">
+        <td style="padding:8px 6px"><input value="${item.name}" onchange="updateItem(${idx},'name',this.value)" style="border:none;outline:none;width:100%;font-size:13px;color:${C.ch};font-family:inherit;background:transparent"></td>
+        <td style="padding:8px 6px"><select onchange="updateItem(${idx},'type',this.value)" style="border:1px solid ${C.bd};border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit;background:#fff;color:${C.ch}">
+          <option value="base"${item.type==='base'?' selected':''}>Base</option>
+          <option value="addon"${item.type==='addon'?' selected':''}>Add-On</option>
+        </select></td>
+        <td style="padding:8px 6px;width:58px"><input type="number" value="${item.qty}" min="1" onchange="updateItem(${idx},'qty',parseInt(this.value)||1)" style="border:1px solid ${C.bd};border-radius:5px;width:50px;padding:3px 6px;font-size:12px;font-family:inherit;text-align:center;color:${C.ch}"></td>
+        <td style="padding:8px 6px;width:76px"><input type="number" value="${item.price}" min="0" onchange="updateItem(${idx},'price',parseFloat(this.value)||0)" style="border:1px solid ${C.bd};border-radius:5px;width:68px;padding:3px 6px;font-size:12px;font-family:inherit;text-align:right;color:${C.ch}"></td>
+        <td style="padding:8px 4px;text-align:center"><button onclick="removeItem(${idx})" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;padding:2px 6px">✕</button></td>
+      </tr>`).join('');
+
+    tabContent=`
+      <div style="font-size:12px;color:#8a9a9a;margin-bottom:14px">Line items from the client's Sprout contract. Qty × unit price/mo × term = total.</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px">
+        <thead><tr style="border-bottom:2px solid ${C.bd}">
+          ${['Line Item','Type','Qty','$/mo',''].map((h,i)=>`<th style="padding:6px 6px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${C.cd}">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <button onclick="addItem()" style="border:1.5px dashed ${C.bd};border-radius:7px;padding:6px 16px;background:none;color:${C.j};font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:18px">+ Add line item</button>
+      <div style="background:${C.bg};border-radius:10px;padding:14px 18px;font-size:13px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;color:${C.cl};margin-bottom:5px"><span>Subtotal</span><span>$${sub.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;color:${C.j};margin-bottom:5px"><span>Discount (${cl.discount||0}%)</span><span>-$${disc.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;color:${C.j};font-size:15px;border-top:1px solid ${C.bd};padding-top:8px"><span style="color:${C.ch};font-weight:600;font-size:14px">Total Contract Value</span><span>$${total.toLocaleString()}</span></div>
+      </div>
+      <div style="border-top:1px solid ${C.bd};margin-bottom:14px"></div>
+      <div style="font-size:11px;color:${C.cd};margin-bottom:10px">Features included (drives AI usage descriptions). Edit freely.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px">
+        ${state.feats.map((f,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;background:${C.jl};color:#0a7a38;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:500">${f}<button onclick="removeFeat(${i})" style="background:none;border:none;cursor:pointer;color:#0ca750;font-size:12px;padding:0;line-height:1">×</button></span>`).join('')}
+        <input placeholder="+ add feature" onkeydown="if(event.key==='Enter'&&this.value.trim()){addFeat(this.value.trim());this.value=''}" style="border:1px dashed ${C.bd};border-radius:5px;padding:4px 10px;font-size:11px;outline:none;color:${C.ch};font-family:inherit;width:130px;background:#fff">
+      </div>`;
+  }
+
+  if(tab==='context'){
+    const ctxFields=[
+      {key:'gong',label:'Gong Call Notes / AI Summary',ph:'Paste your Gong notes, call summary, or AI-generated recap here...'},
+      {key:'transcript',label:'Call Transcript',ph:'Paste transcript excerpts — or upload a .txt / .pdf file using the button above...'},
+      {key:'gainsight',label:'Gainsight / Account Health Data',ph:'Health scores, product usage stats, support tickets, adoption metrics, renewal risk signals...'},
+      {key:'other',label:'Other Context',ph:'Background notes, previous emails, stakeholder info, strategic priorities, competitive concerns...'}
+    ];
+    tabContent=`
+      <div style="font-size:12px;color:#8a9a9a;margin-bottom:18px;line-height:1.6">The more context you provide, the more tailored the renewal document will be. Paste from Gong, Gainsight, or your own notes. Upload .txt or .pdf files.</div>
+      ${state.pdfFile?`<div style="background:#1e3030;border:1px solid #2a5040;border-radius:8px;padding:10px 14px;font-size:12px;color:#6dcc90;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+        <span>📄</span><span>PDF attached: <strong>${state.pdfFile.name}</strong></span>
+        <button onclick="state.pdfFile=null;render()" style="background:none;border:none;color:#8a9a9a;cursor:pointer;margin-left:auto;font-size:12px;font-family:inherit">Remove</button>
+      </div>`:''}
+      ${ctxFields.map(({key,label,ph})=>`
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            ${lbl(label)}
+            <label style="font-size:11px;color:${C.j};cursor:pointer;display:flex;align-items:center;gap:4px">
+              <input type="file" accept=".txt,.pdf,.md" onchange="handleFile(event,'${key}')" style="display:none">↑ Upload file
+            </label>
+          </div>
+          <textarea class="ta" rows="3" placeholder="${ph}" oninput="setCtx('${key}',this.value)">${state.ctx[key]}</textarea>
+        </div>`).join('')}`;
+  }
+
+  const tabIdx=TABS.findIndex(t=>t.id===tab);
+
+  return`
+    <div style="min-height:100vh;background:#2c3838">
+      <div class="no-print" style="background:#2c3838;border-bottom:1px solid #3a4848;padding:14px 24px;display:flex;align-items:center;gap:12px">
+        ${logoSVG(28)}
+        <div style="flex:1"></div>
+        <div style="color:#7a9080;font-size:12px">Renewal Document Builder</div>
+      </div>
+
+      <div style="max-width:760px;margin:0 auto;padding:28px 16px">
+        <div style="margin-bottom:24px">
+          <h1 style="color:#fff;font-size:21px;font-weight:500;margin-bottom:6px">Build a Renewal Document</h1>
+          <p style="color:#7a9080;font-size:13px;line-height:1.6">Fill in client details, paste in Gong notes, transcript, or Gainsight data — Claude generates a tailored, exec-ready renewal doc in seconds.</p>
+        </div>
+
+        ${state.error?`<div style="background:#3d2020;border:1px solid #6d3030;border-radius:8px;padding:10px 14px;color:#f09090;font-size:13px;margin-bottom:14px">${state.error}</div>`:''}
+
+        <div style="background:#fff;border-radius:14px;overflow:hidden">
+          <div style="display:flex;border-bottom:1px solid ${C.bd}">
+            ${TABS.map(t=>`<button class="tab-btn${state.tab===t.id?' active':''}" onclick="state.tab='${t.id}';render()">${t.label}</button>`).join('')}
+          </div>
+
+          <div style="padding:22px 26px">${tabContent}</div>
+
+          <div style="padding:14px 26px;border-top:1px solid ${C.bd};display:flex;align-items:center;justify-content:space-between;background:${C.bg}">
+            <div style="font-size:12px;color:${C.cd}">${cl.company?`Building renewal doc for <strong style="color:${C.ch}">${cl.company}</strong>`:'Enter client details to get started'}</div>
+            <div style="display:flex;gap:8px">
+              ${tabIdx>0?`<button onclick="state.tab='${TABS[tabIdx-1].id}';render()" style="background:transparent;border:1px solid ${C.bd};border-radius:7px;padding:7px 16px;font-size:13px;cursor:pointer;color:${C.ch};font-family:inherit">← Back</button>`:''}
+              ${tab!=='context'
+                ?`<button onclick="state.tab='${TABS[tabIdx+1].id}';render()" style="background:${C.j};color:#fff;border:none;border-radius:7px;padding:7px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Next →</button>`
+                :`<button class="gen-btn" onclick="generate()">✦ Generate Document</button>`}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── RENDER GENERATING ────────────────────────────
+function renderGenerating(){
+  return`<div style="min-height:100vh;background:#2c3838;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+    ${logoSVG(42)}
+    <div style="color:#fff;font-size:16px;font-weight:500;margin-top:4px">Generating your renewal document...</div>
+    <div style="color:#7a9080;font-size:13px">Analyzing call context · crafting tailored insights · building exec narrative</div>
+    <div style="width:280px;height:3px;background:#2a3838;border-radius:2px;overflow:hidden;margin-top:6px">
+      <div style="height:100%;background:#0ca750;border-radius:2px;animation:grow 1.8s ease-in-out infinite"></div>
+    </div>
+    <div style="color:#5a7070;font-size:11px;margin-top:8px">This takes 10–20 seconds depending on context length</div>
+  </div>`;
+}
+
+// ─── RENDER DOC ───────────────────────────────────
+function renderDoc(){
+  const g=state.gen;
+  const cl=state.cl;
+  const {term,sub,disc,total}=calcTotals();
+  const today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  const usageCards=(g.usageHighlights||[]).map((item,idx)=>`
+    <div style="border:1px solid ${C.bd};border-radius:10px;padding:16px 18px;background:#fff">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:8px;height:8px;border-radius:2px;background:#0ca750;flex-shrink:0"></div>
+        <div style="font-size:12px;font-weight:700;color:${C.ch}">${item.feature}</div>
+      </div>
+      <div style="font-size:11px;color:#8a9a9a;line-height:1.5;margin-bottom:10px">${FEAT_DESC[item.feature]||''}</div>
+      <div style="border-top:1px solid ${C.bd};padding-top:9px">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#0ca750;margin-bottom:5px">How ${cl.company||'your team'} uses it</div>
+        <div contenteditable="true" onblur="updateUsage(${idx},'teamUsage',this.innerText)" style="font-size:12px;color:${C.ch};line-height:1.55;outline:none;cursor:text">${item.teamUsage||''}</div>
+        ${item.impact?`<div style="margin-top:7px;padding:4px 9px;background:#e8f5ec;border-radius:5px;font-size:11px;color:#0a7a38;font-style:italic">→ ${item.impact}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  const recCards=(g.recommendations||[]).map((rec,idx)=>`
+    <div style="border:1.5px solid #b0d4c0;border-radius:10px;padding:14px 18px;display:flex;gap:14px;align-items:flex-start">
+      <div style="width:30px;height:30px;border-radius:8px;background:#e8f5ec;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px">
+        <span style="font-size:16px;color:#0ca750;font-weight:700">+</span>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:${C.ch};margin-bottom:4px">${rec.feature}</div>
+        <div contenteditable="true" onblur="updateRec(${idx},'reason',this.innerText)" style="font-size:12px;color:${C.cl};line-height:1.5;outline:none;cursor:text;margin-bottom:5px">${rec.reason||''}</div>
+        <div style="font-size:11px;color:#0ca750;font-weight:600">Expected outcome: <span contenteditable="true" onblur="updateRec(${idx},'benefit',this.innerText)" style="outline:none;cursor:text">${rec.benefit||''}</span></div>
+      </div>
+    </div>`).join('');
+
+  const tpList=(g.renewalTalkingPoints||[]).map((tp,idx)=>`
+    <div style="display:flex;gap:10px;margin-bottom:${idx<(g.renewalTalkingPoints.length-1)?'10px':'0'};align-items:flex-start">
+      <span style="color:#0ca750;font-weight:700;flex-shrink:0;margin-top:1px">${idx+1}.</span>
+      <div contenteditable="true" onblur="updateTp(${idx},this.innerText)" style="font-size:13px;color:${C.ch};line-height:1.5;outline:none;cursor:text">${tp}</div>
+    </div>`).join('');
+
+  return`
+    <div id="doc-outer" style="background:#e5eae7;min-height:100vh">
+      <div class="no-print" style="background:#354141;padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10">
+        ${logoSVG(24)}
+        <div style="flex:1"></div>
+        <span style="color:#7a9080;font-size:11px;margin-right:6px">Click any text to edit before exporting</span>
+        <button class="back-btn" onclick="state.step='input';render()">← Back to Edit</button>
+        <button class="print-btn" onclick="window.print()">⬇ Export PDF</button>
+      </div>
+
+      <div id="doc-paper" style="max-width:820px;margin:24px auto 48px;background:#fff;border-radius:14px;box-shadow:0 4px 28px rgba(0,0,0,.14);overflow:hidden">
+
+        <div style="background:#354141;padding:26px 40px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+            ${logoSVG(32)}
+            <div style="text-align:right">
+              <div style="color:#fff;font-size:19px;font-weight:300;letter-spacing:-.3px">Account Renewal Summary</div>
+              <div style="color:#7a9080;font-size:11px;margin-top:4px">${cl.quoteNum} &nbsp;·&nbsp; ${today}</div>
+              ${cl.company?`<div style="color:#63DD6F;font-size:15px;font-weight:600;margin-top:6px">${cl.company}</div>`:''}
+            </div>
+          </div>
+        </div>
+
+        <div style="height:4px;background:linear-gradient(90deg,#0ca750 0%,#63DD6F 100%)"></div>
+
+        <div style="padding:30px 40px">
+
+          <!-- Plan + Contract 2-col -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:26px">
+            <div style="background:#354141;border-radius:12px;padding:20px 22px">
+              <div style="color:#8a9a9a;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px">Current Plan</div>
+              <div style="color:#fff;font-size:19px;font-weight:600">Sprout Social ${cl.plan}</div>
+              <div style="color:#63DD6F;font-size:26px;font-weight:700;letter-spacing:-1px;margin:10px 0 2px">$${total.toLocaleString()}</div>
+              <div style="color:#8a9a9a;font-size:12px">${term===1?'per month':term===12?'per year · annual contract':'over 2 years · annual billing'}</div>
+              ${disc>0?`<div style="margin-top:10px;background:#2a4040;border-radius:6px;padding:5px 10px;font-size:11px;color:#63DD6F;display:inline-block">${cl.discount}% discount applied · saves $${disc.toLocaleString()}</div>`:''}
+            </div>
+            <div style="border:1px solid ${C.bd};border-radius:12px;padding:20px 22px">
+              <div style="color:#8a9a9a;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px">Contract Details</div>
+              ${[
+                ['Client',cl.company||'—'],
+                ['Contact',cl.contact?(cl.contact+(cl.title?`, ${cl.title}`:'')):' —'],
+                ['Period',cl.startDate&&cl.endDate?`${cl.startDate} → ${cl.endDate}`:`${term} months`],
+                ['Account Manager',cl.am||'—'],
+                ['Billing',cl.billing]
+              ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px"><span style="color:#8a9a9a">${l}</span><span style="color:${C.ch};font-weight:500;text-align:right;max-width:58%">${v}</span></div>`).join('')}
+            </div>
+          </div>
+
+          <!-- Line items -->
+          <div style="margin-bottom:26px">
+            ${sectionTitle('◼','Contract Line Items')}
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="border-bottom:2px solid ${C.bd}">
+                ${['Item','Type','Qty','Unit/mo','Total'].map((h,i)=>`<th style="padding:6px 8px;text-align:${i>1?'right':'left'};font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#8a9a9a">${h}</th>`).join('')}
+              </tr></thead>
+              <tbody>
+                ${state.items.map(item=>`
+                  <tr style="border-bottom:1px solid ${C.bd}">
+                    <td style="padding:10px 8px;color:${C.ch};font-weight:500">${item.name}</td>
+                    <td style="padding:10px 8px"><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:${item.type==='addon'?'#e8f0fa':'#e8f5ec'};color:${item.type==='addon'?'#0a2960':'#0a7a38'}">${item.type==='base'?'Base Plan':'Add-On'}</span></td>
+                    <td style="padding:10px 8px;text-align:right;color:${C.cl}">${item.qty}</td>
+                    <td style="padding:10px 8px;text-align:right;color:${C.cl}">$${item.price.toLocaleString()}</td>
+                    <td style="padding:10px 8px;text-align:right;color:${C.ch};font-weight:600">$${(item.qty*item.price*term).toLocaleString()}</td>
+                  </tr>`).join('')}
+                <tr style="border-top:2px solid ${C.bd}">
+                  <td colspan="4" style="padding:10px 8px;text-align:right;font-weight:600;color:${C.ch}">Total Contract Value</td>
+                  <td style="padding:10px 8px;text-align:right;font-weight:700;color:#0ca750;font-size:15px">$${total.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- AI divider -->
+          <div style="margin:28px 0;text-align:center;position:relative">
+            <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:${C.bd}"></div>
+            <span style="position:relative;background:#fff;padding:0 16px;font-size:10px;color:#8a9a9a;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">Tailored Renewal Insights</span>
+          </div>
+
+          <!-- Executive Summary -->
+          <div style="background:linear-gradient(135deg,#e8f5ec 0%,#f2fbf6 100%);border:1px solid #b8ddc8;border-radius:12px;padding:20px 24px;margin-bottom:26px">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#0ca750;margin-bottom:10px">Executive Summary</div>
+            <div contenteditable="true" onblur="state.gen.executiveSummary=this.innerText" style="font-size:14px;line-height:1.75;color:${C.ch};outline:none;cursor:text">${g.executiveSummary||''}</div>
+          </div>
+
+          <!-- Features + Usage -->
+          <div style="margin-bottom:26px">
+            ${sectionTitle('✓',`What's Included — And How ${cl.company||'Your Team'} Uses It`)}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">${usageCards}</div>
+          </div>
+
+          <!-- Business Case -->
+          <div style="margin-bottom:26px">
+            ${sectionTitle('◈','The Business Case for Renewal')}
+            <div style="background:#354141;border-radius:12px;padding:22px 26px;margin-bottom:13px">
+              <div contenteditable="true" onblur="state.gen.businessCase.headline=this.innerText" style="color:#fff;font-size:18px;font-weight:500;margin-bottom:13px;outline:none;cursor:text">${g.businessCase?.headline||''}</div>
+              <div contenteditable="true" onblur="state.gen.businessCase.narrative=this.innerText" style="color:#a0b8b0;font-size:13px;line-height:1.75;outline:none;cursor:text">${g.businessCase?.narrative||''}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              ${(g.businessCase?.keyWins||[]).map((win,idx)=>`
+                <div style="background:#e8f5ec;border:1px solid #c0ddd0;border-radius:10px;padding:14px 16px">
+                  <div style="font-size:16px;margin-bottom:7px;color:#0ca750">★</div>
+                  <div contenteditable="true" onblur="updateWin(${idx},this.innerText)" style="font-size:12px;color:${C.ch};line-height:1.5;font-weight:500;outline:none;cursor:text">${win}</div>
+                </div>`).join('')}
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          ${recCards?`<div style="margin-bottom:26px">${sectionTitle('→','Growth Opportunities')}<div style="display:grid;gap:10px">${recCards}</div></div>`:''}
+
+          <!-- Talking Points -->
+          ${tpList?`<div style="margin-bottom:6px">${sectionTitle('◉','Renewal Talking Points')}<div style="background:#f5f7f6;border-radius:10px;padding:16px 20px">${tpList}</div></div>`:''}
+
+        </div>
+
+        <div style="border-top:1px solid ${C.bd};padding:16px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="font-size:11px;color:#8a9a9a;line-height:1.6">
+            Prepared by ${cl.am||'your Sprout Social Account Manager'}${cl.amEmail?' · '+cl.amEmail:''}<br>
+            Confidential — prepared for ${cl.company||'client'} internal use.
+          </div>
+          <div style="font-size:11px;color:#b0bab6">sproutsocial.com</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── RENDER ───────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  if(state.step==='generating'){app.innerHTML=renderGenerating();return}
+  if(state.step==='doc'&&state.gen){app.innerHTML=renderDoc();return}
+  app.innerHTML=renderInput();
+}
+
+// ─── MUTATIONS ────────────────────────────────────
+window.setC=setC;
+window.setCtx=setCtx;
+window.changePlan=function(p){state.cl.plan=p;state.feats=[...PLAN_FEATS[p]||[]];render()};
+window.updateItem=function(idx,k,v){state.items=state.items.map((it,i)=>i===idx?{...it,[k]:v}:it);render()};
+window.addItem=function(){state.items=[...state.items,{id:Date.now(),name:'New line item',type:'addon',qty:1,price:0}];render()};
+window.removeItem=function(idx){state.items=state.items.filter((_,i)=>i!==idx);render()};
+window.addFeat=function(f){state.feats=[...state.feats,f];render()};
+window.removeFeat=function(idx){state.feats=state.feats.filter((_,i)=>i!==idx);render()};
+window.generate=generate;
+window.handleFile=handleFile;
+window.updateUsage=function(idx,k,v){if(state.gen?.usageHighlights?.[idx])state.gen.usageHighlights[idx][k]=v};
+window.updateRec=function(idx,k,v){if(state.gen?.recommendations?.[idx])state.gen.recommendations[idx][k]=v};
+window.updateWin=function(idx,v){if(state.gen?.businessCase?.keyWins)state.gen.businessCase.keyWins[idx]=v};
+window.updateTp=function(idx,v){if(state.gen?.renewalTalkingPoints)state.gen.renewalTalkingPoints[idx]=v};
+
+render();
+</script>
